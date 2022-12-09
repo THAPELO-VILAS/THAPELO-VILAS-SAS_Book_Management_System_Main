@@ -1,1 +1,193 @@
+data book_management_system;
+	length id 3 Title$ 60 Author$ 60 Isbn$ 20 Publish_date$ 20 Price 8 Book_quantity 5 Book_sales 8 Book_sold 8;
+	infile cards dsd dlm=',' truncover ;
+	input id Title$ Author$ Isbn$ Publish_date$ Price Book_quantity Book_sales Book_sold;
+	format Publish_date DDMMYY10.;
+cards;
+1, Holding Up the Universe,  Jenifer Niven, 195153448,  05/07/2002,  23.9, 15, 0.0, 0.0
+2,	A woman makes a plan,	Maye Musk,	2005018,	17/04/2020,	234.96,	15,	0.0, 0.0
+3,	Mindset,	DR Carol S. Dweck,	60973129,	10/01/2017,	456.8,	15,	0.0, 0.0
+4,	7 habits of highly effective people,	Steven R Covey,	374157065,	21/08/2018,	700, 15, 0.0, 0.0
+5,	The leader who had no title,	James Walsh,	393045218,	01/04/2010,	345.76,	15,	0.0, 0.0
+6,	Classical Mythology,	Mark P. O. Morford,	399135782,	24/06/1905,	372.00,	15,	0.0, 0.0
+7,	Clara Callan,	Richard Bruce Wright,	425176428,	23/06/2010,	156.02,	15,	0.0, 0.0
+8,	Decision in Normandy,	Carlo D'Este,	671870432,	13/06/2018,	825.00,	15,	0.0, 0.0
+9,	Flu: The Story of the Great Influenza Pandemic of 1918 and the Search for the Virus That Caused It,	Gina Bari Kolata,	679425608,	21/06/2022,	120, 15,	0.0, 0.0
+10,	The Mummies of Urumchi,	E. J. W. Barber,	074322678X,	21/06/2014,	340.17, 15,	0.0, 0.0
+11,	The Kitchen God's Wife,	Amy Tan,	771074670,	13/06/2006,	666.00,	15,	0.0, 0.0
+12,	What If?: The World's Foremost Military Historians Imagine What Might Have Been,	Robert Cowley,	080652121X,	22/06/1999,	367,	15, 0.0, 0.0 
+13,	PLEADING GUILTY,	Scott Turow,	887841740,	15/06/1970,	298.69,	15, 0.0, 0.0
+14,	Under the Black Flag: The Romance and the Reality of Life Among the Pirates,	David Cordingly,	1552041778,	18/06/2016,	312,	15, 0.0, 0.0 
+15,	Where You'll Find Me: And Other Stories,	Ann Beattie,	195153448,	24/06/2008,	420.00,	15,	0.0, 0.0
+16,	Nights Below Station Street,	David Adams Richards,	2005018,	10/06/2017,	417.20,	15,	0.0, 0.0
+17,	Hitler's Secret Bankers: The Myth of Swiss Neutrality During the Holocaust,	Adam Lebor,	60973129,	22/06/1993,	216.00, 15, 0.0, 0.0
+18,	The Middle Stories,	Sheila Heti,	374157065,	26/06/2000,	190.00,	15,	0.0, 0.0
+19,	Jane Doe,	R. J. Kaiser,	393045218,	21/06/1997,	235.00,	15,	0.0, 0.0
+20,	Love Medicine and Miracles,	Jack Canfield,	156047624,	20/06/2004,	320.00,	15,	0.0, 0.0
+;
+run;
 
+/*code to add a new column and initialise it to zero*/
+Data  work.book_management;
+ set  work.book_management;
+ 'search count'n = 0 ;
+ 
+run;
+
+
+/*Book Management Store*/
+/* %let book_name = '7 habits of highly effective people'; */
+/*  */
+/* title h=12pt "The book you searched for is &book_name"; */
+/*  */
+/* proc print data = work.book_management; */
+/* where title = &book_name;  */
+/* run; */
+
+/*Searching a book and update the number of times the book was searched from the data set*/
+
+%macro searchFunction(book_name);
+
+	%let book_name = '7 habits of highly effective people';
+	title h=12pt "The car you searched by model number ";
+	    data  work.book_management;
+           modify  work.book_management;
+		   where title = &book_name ; 
+		   'search count'n = 'search count'n + 1;
+		   
+	    run;
+	    proc print data = work.book_management (obs=10);
+    run;
+	
+%mend searchFunction;
+
+%searchFunction(book_name);
+
+
+/* The most popular books*/
+%macro Most_popular();
+	proc  sort data = work.book_management out=sorted ;
+	  by descending 'search count'n  ;
+	run;
+	
+	proc print data = work.sorted (obs=3);
+	run;
+%mend Most_popular;
+
+%Most_popular();
+
+
+
+
+/*adding a book*/
+%macro add_book();
+data work.book_management; 
+set book_management end=book;
+
+if book then do;
+
+   ID = '21'; 
+   title = 'The Little Man';
+   Author = 'John Smith';
+   ISBN = 78976282;
+   Publish_Date = 01/01/2002 ;
+   Price = 123.9;
+   Book_Quantity = 15;
+   Book_Sales =0;
+   Book_Sold = 0;
+   end;
+
+run;
+
+proc print;RUN;
+
+%mend add_book;
+
+%add_book();
+
+
+proc sort data= work.book_management; by ID; run;
+
+data work.book_management; set work.book_management; by ID;
+RUN; 
+
+/* deleting author*/
+%macro deleted_book();
+
+/* Macro*/;
+	%let DeletedAuthor= "Amy Tan";
+	data work.book_management;
+	set work.book_management;
+	if AUTHOR = &DeletedAuthor then DELETE;
+	 RUN;
+ proc print;RUN;
+%mend deleted_book;
+
+%deleted_book();
+
+
+/*updating the title to a new title*/
+%macro updating_title(old_title,new_title);
+	%let new_title = 'If loving you is wrong' ;
+	%let old_title = 'Mindset';
+	data work.book_management;
+	    set  work.book_management;
+	   if Title = &old_title then Title = &new_title ;
+	run;
+	
+	proc print;RUN;
+%mend  updating_title;
+
+%updating_title(old_title,new_title);
+
+
+/*updating the  Author*/
+%macro updating_Author(old_author,new_author);
+	%let old_author = 'Maye Musk' ;
+	%let new_author = 'Stanley smith';
+	data work.book_management;
+	    modify work.book_management;
+	   if Author= &old_author then Author = &new_author ;
+	run;
+	proc print;RUN;
+%mend updating_Author;
+%updating_Author(old_author,new_author);
+
+/*updating the price for two items*/
+%macro update_price(currentPrice);
+
+%let currentPrice = (price*2);
+data work.book_management;
+    set  work.book_management;
+   if Author ="Stanley smith"  then Price = &currentPrice ;
+run;
+proc print;RUN;
+%mend update_price;
+%update_price(currentPrice);
+
+/*updating the book quantity*/
+%macro updating_book_quantity();
+data work.book_management;
+    modify  work.book_management;
+    where Title = &book_name;
+    Book_quantity = Book_quantity + 15 ;
+run;
+proc print;RUN;
+%mend updating_book_quantity;
+%updating_book_quantity();
+
+%macro buy_book(book_quant,book_titles);
+	%let book_quant = 5 ;
+	%let book_titless = '7 habits of highly effective people' ;
+	data work.book_management;
+	modify  work.book_management;
+      if Title = &book_titless then 'Book_sales'n =  'Book_sales'n+(Price* &book_quant);
+      else if Title = &book_titless then 'Book_sold'n = 'Book_sold'n+ &book_quant;
+      else if Title = &book_titless then 'Book_quantity'n='Book_quantity'n-&book_quant; 
+      
+      
+    run;
+proc print;RUN;
+%mend buy_book;
+
+%buy_book(book_quant,book_titless);
